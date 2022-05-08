@@ -50,6 +50,7 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+static int autoenter = 0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -474,8 +475,19 @@ keypress(XKeyEvent *ev)
 	switch(ksym) {
 	default:
 insert:
-		if (!iscntrl(*buf))
+		if (!iscntrl(*buf)) {
 			insert(buf, len);
+            if (autoenter == 1) {
+                puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+                if (!(ev->state & ControlMask)) {
+                    cleanup();
+                    exit(0);
+                }
+                if (sel)
+                    sel->out = 1;
+                break;
+            }
+        }
 		break;
 	case XK_Delete:
 		if (text[cursor] == '\0')
@@ -829,6 +841,8 @@ main(int argc, char *argv[])
 			embed = argv[++i];
 		else if (!strcmp(argv[i], "-bw"))
 			border_width = atoi(argv[++i]); /* border width */
+        else if (!strcmp(argv[i], "-ae"))
+            autoenter = 1;
 		else
 			usage();
 
